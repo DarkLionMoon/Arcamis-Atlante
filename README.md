@@ -13,3 +13,7 @@ I file pubblicati sono in `dist/`. I nomi geografici e le tavole sono in `dist/c
 ## Pubblicazione
 
 Il contenuto di `dist/` può essere servito da qualsiasi hosting statico. `.openai/hosting.json` collega questa copia al sito privato Sites. Il repository GitHub contiene sorgenti, mappe, test e documentazione. Nessuna credenziale è salvata nel progetto.
+
+## Pannello admin
+
+[Amministrazione dell’atlante](https://arcamis-atlante.pages.dev/admin/) con gli stessi account admin di Arcamis. I nomi si salvano per tutti i visitatori in D1. Vedere [guida e configurazione](docs/admin-setup.md).
