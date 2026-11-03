@@ -8,14 +8,16 @@ Spec: ../../../docs/superpowers/specs/2026-11-03-atlante-arcamis-design.md, with
 Italian copy. No invented lore. Valgari in county, Vigilius in original Marchesato. Separate sheets rather than continuous geographic zoom. Responsive, keyboard accessible, reduced motion. Owner-private publication initially.
 
 ## Tasks
-- [ ] Write and run failing behavior tests for regional data, search and viewport math.
-- [ ] Implement data and pure viewport helpers; verify tests pass.
-- [ ] Build atlas interface: world regions, index, location journal, search, URL history, controls, pointer drag and pinch.
-- [ ] Run browser checks: every map loads, county/Marchesato naming, search result opens location, zoom/reset, touch sizing, narrow viewport and keyboard.
-- [ ] Inspect rendered desktop/mobile, correct issues, package and publish with Sites.
+- [x] Write and run failing behavior tests for regional data, search and viewport math.
+- [x] Implement data and pure viewport helpers; verify tests pass.
+- [x] Build atlas interface: world regions, index, location journal, search, URL history, controls, pointer drag and pinch.
+- [x] Run browser checks: every map loads, county/Marchesato naming, search result opens location, zoom/reset, touch sizing, narrow viewport and keyboard.
+- [x] Inspect rendered desktop/mobile, correct issues, package and publish with Sites.
 
 ## Review focus
 Empty search, invalid hash, rapid map switches, two-pointer pinch with finger release, image failure/retry and narrow portrait screens. Tests exercise search and invalid IDs; browser checks cover map switches, mobile and navigation. Errors must offer retry.
 
 ## Reference lock
 Runeterra only informs map exploration. Approved map art supplies the bronze and parchment colors. Dark green workspace surrounds the illustrated sheets, an index like an atlas contents page and parchment travel journal form Arcamis's own interface. Live Refero unavailable (NO_SUBSCRIPTION); bundled craft guidance used for focus and touch.
+
+Verification: four core tests pass. Browser checks pass for all seven sheets, search, names, zoom/reset, real touch pan and pinch, keyboard marker activation after gestures, desktop 1440x1000 and mobile 390x844 / 375x667. Review findings fixed: persistent drag suppression for keyboard clicks; short mobile caption overlap. Publication is pending, regardless of checklist packaging step.
