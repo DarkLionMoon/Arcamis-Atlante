@@ -1,5 +1,7 @@
 # Cartografia originale e rilievo
 
+Aggiornamento: l’utente ha successivamente autorizzato la sostituzione del Marchesato con una resa realistica del nuovo riferimento. Vedere [mappa aggiornata](marchesato-realistic-update.md) per la versione corrente. I vincoli del vecchio PNG descritti sotto documentano la revisione precedente.
+
 Vincolo dell'utente: la geografia di Arcamis deve rimanere quella della mappa originale, compreso il lago di Gromot. La reinterpretazione grafica realistica generata durante l'esplorazione è stata scartata e non è inclusa nella versione pubblicata.
 
 L'atlante usa `assets/world-continuous.png` per la vista generale dettagliata approvata. Quando si entra nel Marchesato, carica `assets/marchesato.png`: il file PNG originale 1920×1080 fornito dall'utente, verificato con SHA-256. Non viene ricostruito ritagliando la precedente base generata. Le differenze tra la vista generale e il disegno regionale non vengono presentate come un mosaico geograficamente registrato.
