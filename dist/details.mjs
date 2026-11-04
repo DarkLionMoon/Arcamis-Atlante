@@ -1,4 +1,4 @@
-// Prototype geometry: trees follow the existing canopy colours, never a new forest mask.
+// Only city landmarks are modelled; forests remain part of the cartographic terrain.
 export function buildDetails(sample,height,cities){
  const vertices=[];let trees=0;
  const add=(p,n,c)=>vertices.push(...p,...n,...c);
@@ -6,7 +6,6 @@ export function buildDetails(sample,height,cities){
  function box(x,y,z,w,d,h,color){const p=[[x-w/2,y-d/2,z],[x+w/2,y-d/2,z],[x+w/2,y+d/2,z],[x-w/2,y+d/2,z],[x-w/2,y-d/2,z+h],[x+w/2,y-d/2,z+h],[x+w/2,y+d/2,z+h],[x-w/2,y+d/2,z+h]];for(const [a,b,c,d]of [[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7],[4,5,6,7]]){tri(p[a],p[b],p[c],color);tri(p[a],p[c],p[d],color);}}
  function cone(x,y,z,r,h,color,sides=6){for(let i=0;i<sides;i++){const a=i*Math.PI*2/sides,b=(i+1)*Math.PI*2/sides;tri([x+Math.cos(a)*r,y+Math.sin(a)*r,z],[x+Math.cos(b)*r,y+Math.sin(b)*r,z],[x,y,z+h],color);}}
  const hash=(x,y)=>{const n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n);};
- for(let i=0;i<22000;i++){const u=hash(i,13),v=hash(i,37),[r,g,b]=sample(u,v);if(!(g>r*1.13&&g>b*1.35&&r<100&&g<145)||u<.025||u>.975||v<.035||v>.96)continue;const x=(u-.5)*16,y=(v-.5)*9,z=height(u,v);if(cities.some(c=>Math.hypot((u-c[1])*16,(v-c[2])*9)<.13))continue;const size=.018+hash(i,55)*.020,tone=hash(i,92);box(x,y,z,.007,.007,size*.7,[.21,.16,.08]);cone(x,y,z+size*.3,size*.6,size*1.5,[.12+tone*.04,.24+tone*.11,.09+tone*.025],7);cone(x,y,z+size*.85,size*.42,size,[.15+tone*.06,.29+tone*.10,.10+tone*.03],7);trees++;}
  const treeCount=vertices.length/9;
  for(const [kind,u,v]of cities){const x=(u-.5)*16,y=(v-.5)*9,z=height(u,v),stone=[.48,.46,.36],roof=[.30,.12,.075],size=kind==='capital'?.10:.065;
   if(kind==='village'){for(let j=0;j<9;j++){const px=x+(hash(j,u)-.5)*.20,py=y+(hash(j,v)-.5)*.14;box(px,py,z,.028,.034,.025,[.62,.53,.36]);cone(px,py,z+.025,.025,.022,roof,4);}continue;}
