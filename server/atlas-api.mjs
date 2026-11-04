@@ -66,6 +66,7 @@ async function limitLogin(request, db) {
 }
 
 export async function handleAtlas(request, env, options = {}) {
+  let stage = 'setup';
   try {
     if (!env?.DB) throw 503;
     const db = env.DB;
@@ -77,10 +78,13 @@ export async function handleAtlas(request, env, options = {}) {
     if (['POST', 'PATCH', 'DELETE'].includes(method) && request.headers.get('Origin') !== url.origin) throw 403;
     if (path === '/api/atlas/session') {
       if (method === 'POST') {
+        stage = 'login-limit';
         await limitLogin(request, db);
         const body = await boundedJSON(request);
         if (!body || typeof body.username !== 'string' || !body.username.trim() || body.username.length > 128 || typeof body.password !== 'string' || !body.password || body.password.length > 1024) throw 400;
+        stage = 'login-upstream';
         const response = await upstream(fetcher, 'login', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://arcamis.pages.dev' }, body: JSON.stringify({ username: body.username, password: body.password, remember: body.remember === true }) });
+        stage = 'login-response';
         const data = await authJSON(response);
         if (!response.ok || data.ok !== true) throw response.status === 429 ? 429 : 401;
         const token = response.headers.get('Set-Cookie')?.match(/(?:^|[,;]\s*)arc_admin=([a-f0-9]{64})(?=;|,|$)/)?.[1];
@@ -115,5 +119,13 @@ export async function handleAtlas(request, env, options = {}) {
       return reply(snapshot(row));
     }
     return error(404);
-  } catch (e) { return error([400,401,403,413,429,503].includes(e) ? e : 503); }
+  } catch (e) {
+    const status = [400,401,403,413,429,503].includes(e) ? e : 503;
+    const response = error(status);
+    if (status === 503) {
+      console.error('Atlas service failure', stage, e instanceof Error ? e.name + ': ' + e.message : e);
+      response.headers.set('X-Atlas-Failure', stage);
+    }
+    return response;
+  }
 }
