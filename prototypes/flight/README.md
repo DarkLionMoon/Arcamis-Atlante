@@ -29,6 +29,14 @@ Mantenere il resto del mondo riconoscibile: rilievi nord-occidentali, ducato set
 
 ## Limiti da valutare
 
+### Edifici senza etichetta nelle Pianure Centrali e a Dolkrid
+
+La copertura include anche 10 gruppi di edifici senza nome già disegnati sulla carta: quattro nelle Pianure Centrali e sei nelle Baronie di Dolkrid. Le posizioni sono state controllate sulla texture originale ingrandita; i massi costieri non sono trattati come case. Gli identificatori sono solo interni, senza nuove etichette o lore inventata per i player.
+
+La capacità delle maschere nel materiale del terreno segue il numero effettivo dei monumenti: non è più fissata ai soli dodici luoghi nominati. La nuova texture `rural-ground.png` viene usata soltanto nelle piccole aree di sostituzione, proteggendo l'acqua e conservando il resto della carta originale. La dissolvenza termina prima delle viste regionali, così gli edifici non restano semitrasparenti durante l'esplorazione di Pianure e Baronie.
+
+Creato con image_gen integrato; prompt esatto: `assets/rural-ground-prompt.txt`. La pagina locale `building-audit.html` è servita per il controllo delle coordinate e non fa parte del sito pubblicato.
+
 ### Estensione agli insediamenti nominati
 
 Il catalogo `landmarks.mjs` definisce 12 monumenti: Aurenthar, Valoria, Artoria, Valgari, Forte Vigilus, Arcamis, Volonx, Vigilius, Galeton, Riva di Ferro, Fumofosco e Vallespiga. Sono rappresentazioni stilizzate delle tipologie già indicate dalle mappe: castelli e fortezze, torri, borghi, edifici portuali e il mulino. Non rappresentano nuovi edifici canonici o nuove informazioni di lore.

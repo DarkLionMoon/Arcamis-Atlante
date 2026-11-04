@@ -6,9 +6,14 @@ import {labelTier,placeLabels,regionForPlace} from '../dist/label-layout.mjs';
 
 test('all named settlements have one landmark and a bounded clearing',()=>{
  const names=['Aurenthar','Valoria','Artoria','Valgari','Forte Vigilus','Arcamis','Volonx','Vigilius','Galeton','Riva di Ferro','Fumofosco','Vallespiga'];
- assert.deepEqual([...landmarks.map(l=>l.name)].sort(),names.sort());
+ assert.deepEqual([...landmarks.filter(l=>l.name).map(l=>l.name)].sort(),names.sort());
  for(const l of landmarks){assert.ok(l.u>0&&l.u<1&&l.v>0&&l.v<1);const[x,y,right,bottom]=l.clear;assert.ok(x<l.u&&l.u<right&&y<l.v&&l.v<bottom,l.name);assert.ok(x>=0&&right<=1&&y>=0&&bottom<=1);assert.ok(right-x<.13&&bottom-y<.18);}
  assert.equal(regionForPlace.Valoria,'virturia');assert.equal(regionForPlace.Artoria,'virturia');
+});
+test('unnamed buildings in the Central Plains and Dolkrid receive geometry without invented names',()=>{
+ const rural=landmarks.filter(l=>l.anonymous);assert.ok(rural.filter(l=>l.region==='aurenthar').length>=4);assert.ok(rural.filter(l=>l.region==='dolkrid').length>=6);
+ assert.equal(new Set(rural.map(l=>l.id)).size,rural.length);for(const l of rural){assert.equal(l.name,null);assert.ok(l.scale<=.75);}
+ const mesh=buildDetails(()=>[70,100,30],()=>0,landmarks);for(const l of rural)assert.ok(mesh.ranges.find(r=>r.id===l.id)?.count>200,l.id);
 });
 test('landmarks produce complete finite triangle geometry without tree models',()=>{
  const mesh=buildDetails(()=>[70,100,30],()=>.08,landmarks);assert.equal(mesh.trees,0);assert.equal(mesh.treeCount,0);assert.equal(mesh.ranges.length,landmarks.length);assert.ok(mesh.vertices.every(Number.isFinite));assert.equal(mesh.vertices.length,mesh.totalCount*9);

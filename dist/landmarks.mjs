@@ -11,4 +11,15 @@ export const landmarks=[
  {name:'Riva di Ferro',kind:'port',u:.542,v:.866,scale:1,clear:[.507,.835,.579,.898]},
  {name:'Fumofosco',kind:'village',u:.641,v:.747,scale:.9,clear:[.625,.728,.662,.771]},
  {name:'Vallespiga',kind:'windmill',u:.479,v:.724,scale:.9,clear:[.465,.692,.50,.75]},
+ // Existing rural building groups: identifiers are internal, never player-facing names.
+ {id:'plains-river-hamlet',name:null,anonymous:true,region:'aurenthar',kind:'hamlet',u:.153,v:.445,scale:.50,clear:[.135,.428,.169,.46]},
+ {id:'plains-west-farms',name:null,anonymous:true,region:'aurenthar',kind:'hamlet',u:.190,v:.428,scale:.48,clear:[.173,.412,.207,.443]},
+ {id:'plains-central-hall',name:null,anonymous:true,region:'aurenthar',kind:'manor',u:.237,v:.505,scale:.55,clear:[.22,.475,.266,.521]},
+ {id:'plains-east-hamlet',name:null,anonymous:true,region:'aurenthar',kind:'hamlet',u:.295,v:.482,scale:.50,clear:[.28,.464,.32,.499]},
+ {id:'dolkrid-northern-hall',name:null,anonymous:true,region:'dolkrid',kind:'manor',u:.208,v:.594,scale:.60,clear:[.187,.56,.233,.607]},
+ {id:'dolkrid-eastern-hamlet',name:null,anonymous:true,region:'dolkrid',kind:'hamlet',u:.341,v:.647,scale:.52,clear:[.325,.63,.367,.666]},
+ {id:'dolkrid-west-bay',name:null,anonymous:true,region:'dolkrid',kind:'hamlet',u:.186,v:.731,scale:.50,clear:[.162,.712,.207,.752]},
+ {id:'dolkrid-southwestern-port',name:null,anonymous:true,region:'dolkrid',kind:'port',u:.140,v:.805,scale:.50,clear:[.123,.786,.163,.827]},
+ {id:'dolkrid-bay-peninsula',name:null,anonymous:true,region:'dolkrid',kind:'market',u:.329,v:.808,scale:.65,clear:[.304,.787,.354,.838]},
+ {id:'dolkrid-eastern-fields',name:null,anonymous:true,region:'dolkrid',kind:'hamlet',u:.437,v:.601,scale:.45,clear:[.418,.58,.456,.623]},
 ];
