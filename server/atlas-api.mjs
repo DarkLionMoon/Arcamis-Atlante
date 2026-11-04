@@ -34,7 +34,8 @@ function sessionToken(request) {
   return /^[a-f0-9]{64}$/.test(value) ? value : null;
 }
 async function upstream(fetcher, action, init = {}) {
-  const response = await fetcher(AUTH + action, { ...init, redirect: 'error', signal: AbortSignal.timeout(10000) });
+  // Workers supports manual/follow only. Reject redirects below without forwarding credentials.
+  const response = await fetcher(AUTH + action, { ...init, redirect: 'manual', signal: AbortSignal.timeout(10000) });
   if (response.status >= 500 || response.status >= 300 && response.status < 400) throw 503;
   return response;
 }
