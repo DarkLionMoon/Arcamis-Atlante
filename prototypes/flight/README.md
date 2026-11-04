@@ -29,6 +29,18 @@ Mantenere il resto del mondo riconoscibile: rilievi nord-occidentali, ducato set
 
 ## Limiti da valutare
 
+### Aggiornamento locale: monumento e schede
+
+Il monumento di Aurenthar ha torri, merli, finestre, coperture a padiglione, materiali procedurali e ombra di contatto. A zoom ravvicinato una piccola zona della texture sotto Aurenthar sfuma verso un terreno senza città dipinta, evitando due castelli sovrapposti. La texture originale resta visibile da lontano; la texture alternativa viene campionata solo nell'intorno di Aurenthar. Il resto della geografia mantiene la texture originale.
+
+Il terreno alternativo `assets/aurenthar-ground.png` è stato creato con image_gen integrato. Il prompt esatto è in `assets/aurenthar-ground-prompt.txt`.
+
+Le etichette distinguono regioni, città e luoghi minori. Un controllo delle sovrapposizioni le tiene lontane dalle altre etichette e dai pannelli. I nomi sotto Aurenthar restano fuori dal volume del monumento.
+
+Le schede usano descrizioni e percorsi dal file Arcamis `content/mappins.json` e dal registro pagine, solo per luoghi marcati esplorati. I contenuti non disponibili hanno un testo cartografico neutro e nessun collegamento inventato. «Torna alla regione» ripristina la vista regionale; le tavole restano statiche.
+
+Verificati nel browser: scheda di Aurenthar, apertura e chiusura della sua tavola, ritorno alla regione, ricerca Gromot e collegamento ufficiale, vista mobile. Verificati anche gerarchia e collisioni delle etichette, origine dei collegamenti, esclusione di descrizioni per luoghi non esplorati, geometria finita e assenza di alberi 3D. Le modifiche di questa sezione restano nella cartella locale `prototypes/flight`; nessun push o deploy.
+
 La nuova illustrazione è una proposta di raccordo geografico generata, non una registrazione pixel per pixel della tavola originale. Rimane da convalidare il tracciato della Foresta Infinita e la corrispondenza di tutti i dettagli regionali prima di sostituire asset pubblici. Gli edifici sono modelli geometrici preliminari, non modelli GLTF definitivi. La risoluzione della texture resta un limite allo zoom molto ravvicinato.
 
 Verifiche: sintassi dei moduli, caricamento nel browser, mappa completa, avvicinamento continuo ad Arcamis, riferimento originale, zoom/trascinamento e assenza di errori nella console durante queste prove.

@@ -1,4 +1,6 @@
 import {buildDetails,DetailRenderer} from './details.mjs';
+import {placeData} from './place-data.mjs';
+import {labelTier,placeLabels,regionForPlace,regionalNames} from './label-layout.mjs';
 import {applyNames,displayName,entityId,createNameCorrections,PUBLIC_ORIGIN} from './catalog.mjs';
 const $=id=>document.getElementById(id),canvas=$('terrain'),gl=canvas.getContext('webgl2',{antialias:true,alpha:false});
 if(!gl){location.replace('classic.html'+location.hash);throw Error('WebGL2 unavailable');}
@@ -10,15 +12,18 @@ out vec2 tex;out vec3 norm;out float depth;
 void main(){vec3 p=position-vec3(center,0.);float s=sin(tilt),c=cos(tilt);depth=distance-p.y*s-p.z*c;float vertical=-p.y*c+p.z*s;gl_Position=vec4(p.x*focal/aspect,vertical*focal,(100.05/99.95)*depth-.10005,depth);tex=uv;norm=normal;}`;
 const fs=`#version 300 es
 precision highp float;
-uniform sampler2D image;uniform float tilt;uniform float distance;
+uniform sampler2D image;uniform sampler2D cleanImage;uniform float groundReady;uniform float zoom;uniform float tilt;uniform float distance;
 in vec2 tex;in vec3 norm;in float depth;out vec4 color;
-void main(){vec3 base=texture(image,tex).rgb;float light=max(0.,dot(normalize(norm),normalize(vec3(-.5,-.8,1.6))));vec3 lit=base*(.86+.19*light);float haze=smoothstep(.8,2.6,depth/distance)*.15*sin(tilt);color=vec4(mix(lit,vec3(.23,.38,.39),haze),1.);}`;
+void main(){float mask=smoothstep(.25,.265,tex.x)*(1.-smoothstep(.35,.365,tex.x))*smoothstep(.285,.30,tex.y)*(1.-smoothstep(.435,.45,tex.y));float blend=clamp((zoom-2.1)/1.2,0.,1.)*groundReady*mask;vec3 base=mix(texture(image,tex).rgb,texture(cleanImage,tex).rgb,blend);float light=max(0.,dot(normalize(norm),normalize(vec3(-.5,-.8,1.6))));vec3 lit=base*(.86+.19*light);float contact=(1.-smoothstep(.70,1.45,length((tex-vec2(.311,.377))/vec2(.027,.045))))*.32*clamp((zoom-2.1)/1.2,0.,1.)*groundReady;lit*=1.-contact;float haze=smoothstep(.8,2.6,depth/distance)*.15*sin(tilt);color=vec4(mix(lit,vec3(.23,.38,.39),haze),1.);}`;
 function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
 const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vs));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
-const uniforms=Object.fromEntries(['center','distance','tilt','aspect','focal','image'].map(k=>[k,gl.getUniformLocation(program,k)]));
+const uniforms=Object.fromEntries(['center','distance','tilt','aspect','focal','image','cleanImage','groundReady','zoom'].map(k=>[k,gl.getUniformLocation(program,k)]));
 const vao=gl.createVertexArray();gl.bindVertexArray(vao);const vb=gl.createBuffer(),ib=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);
 for(const [name,size,offset] of [['position',3,0],['normal',3,12],['uv',2,24]]){const a=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,size,gl.FLOAT,false,32,offset);}
 const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+const cleanTexture=gl.createTexture();let groundReady=0;
+gl.bindTexture(gl.TEXTURE_2D,cleanTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+const groundImage=new Image();groundImage.src='/assets/aurenthar-ground.png';groundImage.decode().then(()=>{gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,cleanTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,groundImage);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.activeTexture(gl.TEXTURE0);groundReady=1;}).catch(()=>{});
 const W=16,H=9,focal=1/Math.tan(40*Math.PI/360),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),smooth=t=>(t=clamp(t,0,1))*t*(3-2*t);
 const target={x:0,y:0,zoom:1},camera={...target};let active='world',count=0,ready=false,loadID=0,last=0,pins=[],height=()=>0;
 const maps={
@@ -42,13 +47,13 @@ async function load(key){const id=++loadID;ready=false;$('loading').hidden=false
  gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);count=indices.length;gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);const aniso=gl.getExtension('EXT_texture_filter_anisotropic');if(aniso)gl.texParameterf(gl.TEXTURE_2D,aniso.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
  const cities=key==='march'?[['fort',.182,.34],['fort',.946,.35],['capital',.88,.27],['fort',.775,.52],['village',.835,.735],['village',.225,.745]]:[['capital',.309,.37],['fort',.525,.445],['capital',.90,.585],['fort',.943,.648],['fort',.825,.733],['fort',.497,.63],['village',.855,.858],['village',.542,.866],['fort',.34,.14],['fort',.73,.14]];
  details.setSource(buildDetails(sample,height,cities));
- $('labels').replaceChildren();pins=maps[key].pins.map(([name,u,v])=>{const el=document.createElement('div');el.className='pin';const span=document.createElement('span');span.textContent=name;el.append(span);$('labels').append(el);return {el,u,v};});$('world').setAttribute('aria-pressed',String(key==='world'));$('heading').textContent=maps[key].title;reset();Object.assign(camera,target);ready=true;$('loading').hidden=true;
+ $('labels').replaceChildren();pins=maps[key].pins.map(([name,u,v])=>{const el=document.createElement('button');el.type='button';el.className='pin';el.dataset.defaultName=name;el.setAttribute('aria-label','Apri '+name);el.onclick=()=>{const r=regionForPlace[name];if(camera.zoom<1.8&&r&&regions[r]?.x!==undefined)focusRegion(r);else openPlace({el,u,v});};const span=document.createElement('span');span.textContent=name;el.append(span);$('labels').append(el);return {el,u,v};});$('world').setAttribute('aria-pressed',String(key==='world'));$('heading').textContent=maps[key].title;reset();Object.assign(camera,target);ready=true;$('loading').hidden=true;
 }
 function frame(now){const dt=Math.min(80,now-last||16);last=now;const a=matchMedia('(prefers-reduced-motion:reduce)').matches?1:1-Math.exp(-dt/115);for(const k of ['x','y','zoom'])camera[k]+=(target[k]-camera[k])*a;
  const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,2);if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.055,.16,.17,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
- if(ready){const d=dimensions();gl.enable(gl.DEPTH_TEST);gl.useProgram(program);gl.bindVertexArray(vao);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(uniforms.image,0);gl.uniform2f(uniforms.center,camera.x,camera.y);gl.uniform1f(uniforms.distance,d.distance);gl.uniform1f(uniforms.tilt,d.tilt);gl.uniform1f(uniforms.aspect,d.aspect);gl.uniform1f(uniforms.focal,focal);gl.drawElements(gl.TRIANGLES,count,gl.UNSIGNED_INT,0);
+ if(ready){const d=dimensions();gl.enable(gl.DEPTH_TEST);gl.useProgram(program);gl.bindVertexArray(vao);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(uniforms.image,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,cleanTexture);gl.uniform1i(uniforms.cleanImage,1);gl.uniform1f(uniforms.groundReady,groundReady);gl.uniform1f(uniforms.zoom,camera.zoom);gl.activeTexture(gl.TEXTURE0);gl.uniform2f(uniforms.center,camera.x,camera.y);gl.uniform1f(uniforms.distance,d.distance);gl.uniform1f(uniforms.tilt,d.tilt);gl.uniform1f(uniforms.aspect,d.aspect);gl.uniform1f(uniforms.focal,focal);gl.drawElements(gl.TRIANGLES,count,gl.UNSIGNED_INT,0);
  details.draw(camera);
- for(const {el,u,v} of pins){const p=project((u-.5)*W,(v-.5)*H,height(u,v));el.style.left=p.x+'px';el.style.top=p.y+'px';el.style.opacity=p.depth>0&&(camera.zoom>1.7||['Aurenthar','Valgari','Arcamis','Baronie di Dolkrid','Foreste Antiche','Virturia','Foresta Infinita'].includes(el.dataset.defaultName||el.textContent))?'1':'0';} $('zoom').textContent=Math.round(camera.zoom*100)+'%';$('pitch').textContent=d.tilt<.01?'VISTA DALL’ALTO':`CAMERA INCLINATA · ${Math.round(d.tilt*180/Math.PI)}°`;
+ renderLabels(); $('zoom').textContent=Math.round(camera.zoom*100)+'%';$('pitch').textContent=d.tilt<.01?'VISTA DALL’ALTO':`CAMERA INCLINATA · ${Math.round(d.tilt*180/Math.PI)}°`;
  }requestAnimationFrame(frame);}
 canvas.addEventListener('wheel',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();zoomTo(Math.exp(-clamp(e.deltaY,-200,200)*.002),{x:e.clientX-r.left,y:e.clientY-r.top});},{passive:false});
 const pointers=new Map();let lastPinch=0;
@@ -67,13 +72,13 @@ const regions={
  virturia:{name:'Ducato di Virturia',asset:'virturia',x:.61,y:.18,zoom:2.3},
  dolkrid:{name:'Baronie di Dolkrid',asset:'dolkrid',x:.31,y:.68,zoom:3},
  valgari:{name:'Contea di Valgari',asset:'valgari',x:.51,y:.46,zoom:3.8},
- foreste:{name:'Foreste Antiche',asset:'foreste'}
+ foreste:{name:'Foreste Antiche',asset:'foreste',x:.10,y:.62,zoom:2.8}
 };
 function closeMenus(){for(const id of ['region-menu','sheet-menu'])$(id).open=false;}
 const regionID=key=>'region.'+({arcamis:'marchesato'}[key]||key);
 let focusedRegion=null,openedSheet=null;
 function regionName(key){return displayName(regionID(key),regions[key].name);}
-function focusRegion(key){const r=regions[key];if(!r||r.x===undefined)return;closeMenus();focusedRegion=key;Object.assign(target,{x:(r.x-.5)*W,y:(r.y-.5)*H,zoom:r.zoom});$('heading').textContent=regionName(key);$('world').setAttribute('aria-pressed','false');}
+function focusRegion(key){closePlace(false);const r=regions[key];if(!r||r.x===undefined)return;closeMenus();focusedRegion=key;history.replaceState(null,'','#'+({arcamis:'marchesato'}[key]||key));Object.assign(target,{x:(r.x-.5)*W,y:(r.y-.5)*H,zoom:r.zoom});$('heading').textContent=regionName(key);$('return-region').hidden=false;$('world').setAttribute('aria-pressed','false');}
 for(const button of document.querySelectorAll('[data-region]'))button.onclick=()=>{const key=button.dataset.region;focusRegion(key);history.replaceState(null,'','#'+({arcamis:'marchesato'}[key]||key));};
 function sheetNames(){if(!openedSheet)return;$('sheet-art').querySelector('svg')?.remove();if(openedSheet==='arcamis')$('sheet-art').append(createNameCorrections('marchesato'));$('sheet-title').textContent=regionName(openedSheet);$('sheet-image').alt='Tavola illustrata: '+regionName(openedSheet);}
 for(const button of document.querySelectorAll('[data-sheet]'))button.onclick=()=>{const key=button.dataset.sheet,r=regions[key];closeMenus();openedSheet=key;$('sheet-error').hidden=true;$('sheet-image').src='/assets/'+r.asset+'.png';sheetNames();$('sheet-dialog').showModal();};
@@ -82,13 +87,37 @@ $('sheet-image').onerror=()=>$('sheet-error').hidden=false;
 $('sheet-dialog').addEventListener('click',e=>{if(e.target===$('sheet-dialog')){const b=e.target.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)e.target.close();}});
 for(const id of ['region-menu','sheet-menu'])$(id).addEventListener('toggle',()=>{if($(id).open)$(id==='region-menu'?'sheet-menu':'region-menu').open=false;});
 const aliases={marchesato:'arcamis'};
-function navigateHash(){const key=location.hash.slice(1);if(key==='mondo'){reset();focusedRegion=null;$('heading').textContent=maps.world.title;$('world').setAttribute('aria-pressed','true');}else if(regions[aliases[key]||key])focusRegion(aliases[key]||key);}
+function navigateHash(){const key=location.hash.slice(1);if(key==='mondo'){closePlace(false);$('return-region').hidden=true;reset();focusedRegion=null;$('heading').textContent=maps.world.title;$('world').setAttribute('aria-pressed','true');}else if(regions[aliases[key]||key])focusRegion(aliases[key]||key);}
 window.addEventListener('hashchange',navigateHash);
 $('world').onclick=()=>{closeMenus();history.replaceState(null,'','#mondo');navigateHash();};
 function pinName(pin){const name=pin.el.dataset.defaultName||pin.el.textContent;pin.el.dataset.defaultName=name;return displayName(name==='Virturia'?'region.virturia':entityId(name),name);}
-function updateNames(){for(const pin of pins)pin.el.querySelector('span').textContent=pinName(pin);for(const b of document.querySelectorAll('[data-region]'))b.textContent='Esplora '+regionName(b.dataset.region);for(const b of document.querySelectorAll('[data-sheet]'))b.textContent=regionName(b.dataset.sheet);if(focusedRegion)$('heading').textContent=regionName(focusedRegion);sheetNames();if($('place-search').value)renderSearch();}
-async function refreshNames(){try{const origin=location.hostname.endsWith('.chatgpt.site')?PUBLIC_ORIGIN:'';const response=await fetch(origin+'/api/atlas/names',{cache:'no-store'});if(!response.ok)return;const data=await response.json();applyNames(data.overrides);updateNames();}catch{/* Keep the cartographic names when the service is unavailable. */}}
+function updateNames(){for(const pin of pins)pin.el.querySelector('span').textContent=pinName(pin);for(const b of document.querySelectorAll('[data-region]'))b.textContent='Esplora '+regionName(b.dataset.region);for(const b of document.querySelectorAll('[data-sheet]'))b.textContent=regionName(b.dataset.sheet);if(focusedRegion)$('heading').textContent=regionName(focusedRegion);sheetNames();if(selectedPin)$('card-title').textContent=pinName(selectedPin);if($('place-search').value)renderSearch();}
+async function refreshNames(){try{const origin=location.hostname.endsWith('.chatgpt.site')||location.hostname==='localhost'?PUBLIC_ORIGIN:'';const response=await fetch(origin+'/api/atlas/names',{cache:'no-store'});if(!response.ok)return;const data=await response.json();applyNames(data.overrides);updateNames();}catch{/* Keep the cartographic names when the service is unavailable. */}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshNames();});
-function renderSearch(){const q=$('place-search').value.trim().toLocaleLowerCase('it'),list=$('place-results');list.replaceChildren();list.hidden=!q;if(!q)return;const items=[...Object.keys(regions).filter(k=>regions[k].x!==undefined).map(key=>({name:regionName(key),original:regions[key].name,action:()=>focusRegion(key)})),...pins.map(p=>({name:pinName(p),original:p.el.dataset.defaultName,action:()=>{focusedRegion=null;Object.assign(target,{x:(p.u-.5)*W,y:(p.v-.5)*H,zoom:4});$('heading').textContent=pinName(p);}}))].filter(item=>[item.name,item.original].some(n=>n?.toLocaleLowerCase('it').includes(q))).slice(0,12);if(!items.length){const p=document.createElement('p');p.textContent='Nessun luogo trovato.';p.style.padding='0 12px';list.append(p);}for(const item of items){const b=document.createElement('button');b.textContent=item.name;b.onclick=()=>{item.action();$('place-search').value='';list.hidden=true;};list.append(b);}}
+function renderSearch(){const q=$('place-search').value.trim().toLocaleLowerCase('it'),list=$('place-results');list.replaceChildren();list.hidden=!q;if(!q)return;const items=[...Object.keys(regions).filter(k=>regions[k].x!==undefined).map(key=>({name:regionName(key),original:regions[key].name,action:()=>focusRegion(key)})),...pins.map(p=>({name:pinName(p),original:p.el.dataset.defaultName,action:()=>{openPlace(p);}}))].filter(item=>[item.name,item.original].some(n=>n?.toLocaleLowerCase('it').includes(q))).slice(0,12);if(!items.length){const p=document.createElement('p');p.textContent='Nessun luogo trovato.';p.style.padding='0 12px';list.append(p);}for(const item of items){const b=document.createElement('button');b.textContent=item.name;b.onclick=()=>{item.action();$('place-search').value='';list.hidden=true;};list.append(b);}}
 $('place-search').addEventListener('input',renderSearch);
-window.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenus();$('place-results').hidden=true;}});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){closePlace();closeMenus();$('place-results').hidden=true;}});
+let selectedPin=null;
+const regionFallback=name=>regionForPlace[name]||'arcamis';
+function renderLabels(){
+ const candidates=[],w=canvas.clientWidth,h=canvas.clientHeight;
+ const blocked=[...document.querySelectorAll('header,.search-area,.intro,.dock,.return-region,.place-card')].filter(el=>!el.hidden&&getComputedStyle(el).visibility!=='hidden').map(el=>{const r=el.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};});
+ for(const pin of pins){const {el,u,v}=pin,name=el.dataset.defaultName||el.textContent,tier=labelTier(name,camera.zoom),r=regionForPlace[name];if(!tier){el.hidden=true;continue;}
+  const label=tier==='region'&&r&&name!=='Foresta Infinita'?regionName(r):pinName(pin);el.querySelector('span').textContent=label;el.classList.toggle('region-label',tier==='region');el.setAttribute('aria-label',(tier==='region'?'Esplora ':'Apri ')+label);el.hidden=false;
+  const p=project((u-.5)*W,(v-.5)*H,height(u,v)),y=p.y+(name==='Aurenthar'&&camera.zoom>2.1?Math.min(75,camera.zoom*18):4);el.style.left=p.x+'px';el.style.top=y+'px';el.style.opacity='1';const width=el.offsetWidth||120,boxHeight=el.offsetHeight||45;
+  if(p.depth>0)candidates.push({id:name,rect:{x:p.x-width/2,y,width,height:boxHeight},alternatives:tier==='region'?[{x:p.x-width/2,y:y-60,width,height:boxHeight},{x:p.x-width/2+70,y:y-30,width,height:boxHeight}]:[],priority:selectedPin===pin?100:name==='Aurenthar'?90:tier==='region'?50:tier==='city'?40:10});
+ }
+ const positions=new Map(),visible=placeLabels(candidates,w,h,blocked,positions);for(const pin of pins){const name=pin.el.dataset.defaultName;pin.el.hidden=!visible.has(name);const r=positions.get(name);if(r){pin.el.style.left=(r.x+r.width/2)+'px';pin.el.style.top=r.y+'px';}}
+}
+function openPlace(pin){
+ selectedPin=pin;const name=pin.el.dataset.defaultName,key=regionFallback(name),r=regions[key],data=placeData[name];focusedRegion=key;history.replaceState(null,'','#'+({arcamis:'marchesato'}[key]||key));$('return-region').hidden=false;
+ Object.assign(target,{x:(pin.u-.5)*W,y:(pin.v-.5)*H,zoom:name==='Aurenthar'?3.8:4});$('heading').textContent=regionName(key);$('world').setAttribute('aria-pressed','false');
+ $('card-title').textContent=pinName(pin);$('card-kind').textContent=(regionalNames.has(name)?'TERRITORIO':'LUOGO')+' · '+regionName(key).toLocaleUpperCase('it');
+ $('card-description').textContent=data?.description||(name==='Foresta Infinita'?'La Foresta Infinita si estende dal nord-ovest del Marchesato, attraverso l’entroterra di Valgari, verso le terre fra Pianure Centrali e Dolkrid.':name==='Aurenthar'?'Aurenthar è indicata sulla carta delle Pianure Centrali.':`${pinName(pin)} è segnato nella cartografia di ${regionName(key)}.`);
+ $('card-art').style.backgroundPosition=`${pin.u*100}% ${pin.v*100}%`;$('card-art').setAttribute('aria-label','Dettaglio cartografico del territorio di '+pinName(pin));
+ $('card-link').hidden=!data?.href;if(data?.href)$('card-link').href=data.href;else $('card-link').removeAttribute('href');
+ $('card-sheet').onclick=()=>document.querySelector(`[data-sheet="${key}"]`).click();$('place-card').hidden=false;document.body.classList.add('card-open');$('place-card').focus({preventScroll:true});
+}
+function closePlace(restoreFocus=true){const wasOpen=!$('place-card').hidden;$('place-card').hidden=true;document.body.classList.remove('card-open');if(wasOpen&&restoreFocus&&selectedPin?.el.isConnected)selectedPin.el.focus({preventScroll:true});selectedPin=null;}
+$('card-close').onclick=()=>closePlace();
+$('return-region').onclick=()=>{if(focusedRegion)focusRegion(focusedRegion);};

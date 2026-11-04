@@ -1,0 +1,5 @@
+export const regionForPlace={Aurenthar:'aurenthar',Arcamis:'arcamis',Valgari:'valgari',Virturia:'virturia','Baronie di Dolkrid':'dolkrid','Foreste Antiche':'foreste','Foresta Infinita':'arcamis'};
+export const regionalNames=new Set(['Virturia','Baronie di Dolkrid','Foreste Antiche','Foresta Infinita']);
+export function labelTier(name,zoom){if(regionalNames.has(name))return 'region';if(['Aurenthar','Arcamis','Valgari'].includes(name))return zoom<1.8?'region':'city';return zoom>=3.2?'place':null;}
+const intersects=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
+export function placeLabels(items,width,height,blocked=[],positions=new Map()){const occupied=[...blocked],visible=new Set();for(const item of [...items].sort((a,b)=>b.priority-a.priority)){const r=[item.rect,...(item.alternatives||[])].find(r=>r.x>=8&&r.x+r.width<=width-8&&r.y>=100&&r.y+r.height<=height-70&&!occupied.some(other=>intersects(r,other)));if(!r)continue;visible.add(item.id);positions.set(item.id,r);occupied.push({x:r.x-7,y:r.y-4,width:r.width+14,height:r.height+8});}return visible;}
