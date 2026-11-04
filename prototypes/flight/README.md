@@ -29,6 +29,14 @@ Mantenere il resto del mondo riconoscibile: rilievi nord-occidentali, ducato set
 
 ## Limiti da valutare
 
+### Estensione agli insediamenti nominati
+
+Il catalogo `landmarks.mjs` definisce 12 monumenti: Aurenthar, Valoria, Artoria, Valgari, Forte Vigilus, Arcamis, Volonx, Vigilius, Galeton, Riva di Ferro, Fumofosco e Vallespiga. Sono rappresentazioni stilizzate delle tipologie già indicate dalle mappe: castelli e fortezze, torri, borghi, edifici portuali e il mulino. Non rappresentano nuovi edifici canonici o nuove informazioni di lore.
+
+La texture `assets/towns-ground.png`, generata con image_gen integrato, è campionata solo nelle piccole aree di sostituzione dei monumenti durante lo zoom. L'immagine principale e tutte le tavole regionali restano intatte. Il prompt esatto è in `assets/towns-ground-prompt.txt`. L'acqua originale è protetta dalla maschera e la geometria dei rilievi resta quella esistente.
+
+Le coordinate sono condivise fra monumenti, nomi e schede. La ricerca trova anche Valoria, Artoria e Vallespiga. `tests/landmarks.test.mjs` verifica copertura degli insediamenti, limiti delle aree di sostituzione, triangoli finiti, assenza di alberi 3D, gerarchia e collisioni delle etichette. Verificate nel browser le schede di tutti e 12 i luoghi.
+
 ### Aggiornamento locale: monumento e schede
 
 Il monumento di Aurenthar ha torri, merli, finestre, coperture a padiglione, materiali procedurali e ombra di contatto. A zoom ravvicinato una piccola zona della texture sotto Aurenthar sfuma verso un terreno senza città dipinta, evitando due castelli sovrapposti. La texture originale resta visibile da lontano; la texture alternativa viene campionata solo nell'intorno di Aurenthar. Il resto della geografia mantiene la texture originale.
