@@ -9,7 +9,7 @@ export const landmarks=[
  {name:'Vigilius',kind:'fortress',u:.825,v:.733,scale:.9,clear:[.804,.705,.840,.755]},
  {name:'Galeton',kind:'market',u:.855,v:.858,scale:1,clear:[.827,.825,.887,.89]},
  {name:'Riva di Ferro',kind:'port',u:.542,v:.866,scale:1,clear:[.507,.835,.579,.898]},
- {name:'Fumofosco',kind:'village',u:.641,v:.747,scale:.9,clear:[.625,.728,.662,.771]},
+ {name:'Fumofosco',kind:'village',terrainFollow:true,u:.641,v:.780,scale:.9,clear:[.625,.762,.662,.799]},
  {name:'Vallespiga',kind:'windmill',u:.479,v:.724,scale:.9,clear:[.465,.692,.50,.75]},
  // Existing rural building groups: identifiers are internal, never player-facing names.
  {id:'plains-river-hamlet',name:null,anonymous:true,region:'aurenthar',kind:'hamlet',u:.153,v:.445,scale:.50,clear:[.135,.428,.169,.46]},

@@ -6,5 +6,7 @@ export function groundOffsets(width,height,distance,tilt,focal){
 }
 export function constrainMapCamera(camera,width,height,distance,tilt,focal,mapWidth=16,mapHeight=9){
  const o=groundOffsets(width,height,distance,tilt,focal),bound=(value,min,max)=>min>max?(min+max)/2:Math.max(min,Math.min(max,value));
- return{...camera,x:bound(camera.x,-mapWidth/2-o.minX,mapWidth/2-o.maxX),y:bound(camera.y,-mapHeight/2-o.minY,mapHeight/2-o.maxY)};
+ // Keep the overview edge-to-edge, then allow the camera centre to reach map-edge locations.
+ const t=Math.max(0,Math.min(1,(camera.zoom-1)/1.25)),freedom=t*t*(3-2*t),mix=(a,b)=>a+(b-a)*freedom;
+ return{...camera,x:bound(camera.x,mix(-mapWidth/2-o.minX,-mapWidth/2),mix(mapWidth/2-o.maxX,mapWidth/2)),y:bound(camera.y,mix(-mapHeight/2-o.minY,-mapHeight/2),mix(mapHeight/2-o.maxY,mapHeight/2))};
 }

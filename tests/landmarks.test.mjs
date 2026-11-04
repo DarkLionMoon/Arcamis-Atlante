@@ -19,6 +19,13 @@ test('landmarks produce complete finite triangle geometry without tree models',(
  const mesh=buildDetails(()=>[70,100,30],()=>.08,landmarks);assert.equal(mesh.trees,0);assert.equal(mesh.treeCount,0);assert.equal(mesh.ranges.length,landmarks.length);assert.ok(mesh.vertices.every(Number.isFinite));assert.equal(mesh.vertices.length,mesh.totalCount*9);
  let end=0;for(const r of mesh.ranges){assert.equal(r.start,end);assert.ok(r.count>200,r.name);assert.equal(r.count%3,0);end+=r.count;}assert.equal(end,mesh.totalCount);
 });
+test('Fumofosco houses have separate terrain-supported foundations on a slope',()=>{
+ const town=landmarks.find(l=>l.name==='Fumofosco');assert.equal(town.terrainFollow,true);
+ const slope=(u,v)=>.2+(u-town.u)*2+(v-town.v)*3;
+ const mesh=buildDetails(()=>[70,100,30],slope,[town]);assert.equal(mesh.footings.length,7);
+ for(const f of mesh.footings)for(const dx of[-.5,0,.5])for(const dy of[-.5,0,.5])assert.ok(f.base>slope(f.u+dx*f.width,f.v+dy*f.depth));
+ assert.ok(new Set(mesh.footings.map(f=>f.base.toFixed(5))).size>1);
+});
 test('labels progress from regions to cities and minor places',()=>{
  assert.equal(labelTier('Aurenthar',1),'region');assert.equal(labelTier('Aurenthar',2),'city');assert.equal(labelTier('Artoria',1),null);assert.equal(labelTier('Artoria',2),'city');assert.equal(labelTier('Volonx',2),null);assert.equal(labelTier('Volonx',4),'place');
 });
